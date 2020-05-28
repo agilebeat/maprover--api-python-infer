@@ -1,0 +1,18 @@
+.gitignore.swp
+.requirements.zip
+bin/**
+
+# python libraries
+cv2/**
+numpy-1.18.4.dist-info/**
+numpy.libs/**
+numpy/**
+opencv_python-4.2.0.34.dist-info/**
+
+
+# serverless deployment
+.serverless/**
+package-lock.json
+package.json
+
+

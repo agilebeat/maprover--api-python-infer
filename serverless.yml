@@ -1,0 +1,118 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: maprover-infer-python
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: prod
+  region: us-east-1
+
+# you can add packaging information here
+package:
+  include:
+    - models/**
+    - lib/**
+    - node_modules/**
+    - package-lock.json
+    - api-gateway-models/**
+  exclude:
+    - python.venv/**
+
+functions:
+  aeroway-runway:
+    handler: infer.inferHandler
+    timeout: 30
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - "logs:CreateLogGroup"
+          - "logs:CreateLogStream"
+          - "logs:PutLogEvents"
+          - "logs:DescribeLogStreams"
+        Resource: "arn:aws:logs:*:*:*"
+      - Effect: "Allow"
+        Action: "lambda:InvokeFunction"
+        Resource: "*"
+      - Effect: "Allow"
+        Action:
+          - "s3:GetObjectAcl"
+          - "s3:PutObject"
+          - "s3:PutObjectAcl"
+          - "s3:PutObjectTagging"
+          - "s3:PutObjectVersionAcl"
+          - "s3:PutObjectVersionTagging"
+        Resource: "*"
+    events:
+      - http:
+          reqValidatorName: 'tileInputValidator'
+          path: infer/aeroway-runway
+          method: post
+          cors: true
+          private: false
+          documentation:
+            summary: "Classify a map tile that includes a map feature - aeroway runway"
+            description: "Classifies the tile and returns true if tile contains 'aeroway runway' feature to a class or false if it does not."
+            tags:
+              - "Data Creation"
+              - "Some other tag"
+            requestModels:
+              "application/json": "TileRequest"
+
+# you can add CloudFormation resource templates here
+resources:
+  Resources:
+    tileInputValidator:
+      Type: "AWS::ApiGateway::RequestValidator"
+      Properties:
+        Name: 'tileInputValidator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
+plugins:
+  - serverless-python-requirements
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
+  - serverless-plugin-custom-roles
+custom:
+  pythonRequirements:
+    dockerizePip: false
+    zip: true
+    slim: false
+    noDeploy:
+      - boto3
+      - botocore
+      - docutils
+      - jmespath
+      - pip
+      - python-dateutil
+      - s3transfer
+      - setuptools
+      - six
+
+  documentation:
+    api:
+      info:
+        version: "v0.0.2"
+        title: "Maprover API"
+        description: "Maprover API - color/template based models for a map"
+    models:
+      - 
+        name: 'TileRequest'
+        description: 'Model for validation of the tile request'
+        contentType: "application/json"
+        schema: ${file(api-gateway-models/tile_input.json)}
+
